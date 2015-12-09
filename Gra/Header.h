@@ -8,6 +8,7 @@ struct Statek{
 	//hitbox
 	int hx;
 	int hy;
+	int upgradetype;
 };
 struct Pocisk{
 	int x;
@@ -15,4 +16,16 @@ struct Pocisk{
 	bool live;
 	int predkosc;
 	int dmg;
+};
+struct Upgrade{
+	int type;
+	int x;
+	int y;
+	int predkosc;
+	bool live;
+};
+struct Wybuch{
+	bool live;
+	int x;
+	int y;
 };

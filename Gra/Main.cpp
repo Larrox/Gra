@@ -5,6 +5,8 @@
 #include<allegro5\bitmap_draw.h>
 #include<allegro5\allegro_image.h>
 #include"Header.h"
+#include<allegro5\allegro_ttf.h>
+#include<allegro5\allegro_font.h>
 
 void DefiniujStatek(Statek &gracz, ALLEGRO_BITMAP *mapa){
 	gracz.x = 300;
@@ -16,6 +18,7 @@ void DefiniujStatek(Statek &gracz, ALLEGRO_BITMAP *mapa){
 	gracz.hx = 40;
 	gracz.hy = 40;
 	gracz.upgradetype = 0;
+	gracz.punkty = 0;
 }
 void RysujStatek(Statek &gracz){
 	if (gracz.live){
@@ -105,7 +108,7 @@ void RuszajPocisk(Pocisk zwykly[], int ilosc){
 		}
 	}
 }
-void Trafienie(Pocisk zwykly[], int ilosc, Statek &wrog, Upgrade &up, int czas, Wybuch &wybuch){
+void Trafienie(Pocisk zwykly[], int ilosc, Statek &wrog, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz){
 	for (int i = 0; i < ilosc; i++){
 		if (zwykly[i].live && wrog.live){
 			if (
@@ -115,6 +118,7 @@ void Trafienie(Pocisk zwykly[], int ilosc, Statek &wrog, Upgrade &up, int czas, 
 				zwykly[i].y <(wrog.y +20 + wrog.hy)){
 					wrog.hp -= zwykly[i].dmg;
 					zwykly[i].live = false;
+					gracz.punkty += 10;
 					if (wrog.hp <= 0){
 						wrog.live = false;
 						up.live = true;
@@ -124,6 +128,7 @@ void Trafienie(Pocisk zwykly[], int ilosc, Statek &wrog, Upgrade &up, int czas, 
 						wybuch.live = true;
 						wybuch.x = wrog.x + 10;
 						wybuch.y = wrog.y + 10;
+						gracz.punkty += 100;
 						}
 
 			}
@@ -166,6 +171,7 @@ void Zbieranie(Statek &gracz, Upgrade &up, int czas){
 			up.y <(gracz.y + 20 + gracz.hy)){
 				gracz.upgradetype = up.type;
 				up.live = false;
+				gracz.punkty += 100;
 				czas = 0;
 			}
 		}
@@ -191,6 +197,9 @@ int main(void)
 	int curFrame = 0;
 	int frameCount = 0;
 	int frameDelay = 20;
+	bool menu = true, game = false, menu2 = false;
+	int menuy = 390;
+
 	
 	Statek gracz;
 	Statek wrog;
@@ -201,6 +210,8 @@ int main(void)
 	wybuch1.live = false;
 
 	al_init_image_addon();
+	al_init_font_addon();
+	al_init_ttf_addon();
 
 	ALLEGRO_DISPLAY *display = NULL;
 	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
@@ -209,6 +220,8 @@ int main(void)
 	ALLEGRO_BITMAP *BM_Wrog = NULL;
 	ALLEGRO_BITMAP *BM_Tlo = NULL;
 	ALLEGRO_BITMAP *BM_Exp[maxFrame];
+	ALLEGRO_FONT *font = NULL;
+	ALLEGRO_FONT *title = NULL;
 
 	if (!al_init())
 	{
@@ -249,6 +262,7 @@ int main(void)
 	BM_Exp[3] = al_load_bitmap("exp4.png");
 	BM_Exp[4] = al_load_bitmap("exp5.png");
 	BM_Tlo = al_load_bitmap("tlo.png");
+	font = al_load_font("ALGER.ttf", 36, NULL);
 	for (int i = 0; i < maxFrame; i++){
 		al_convert_mask_to_alpha(BM_Exp[i], al_map_rgb(255, 255, 255));
 	}
@@ -259,126 +273,195 @@ int main(void)
 	DefiniujPocisk(zwykly, num_pociski);
 	DefiniujPociskUp(ulepszony, num_pociski);
 	DefiniujUpgrade(upgrade);
+	font = al_load_font("ALGER.ttf", 36, NULL);
+	title = al_load_font("ALGER.ttf", 56, NULL);
+	al_start_timer(timer);
 
 
 	while (!done)
 	{
-		al_draw_bitmap(BM_Tlo, 0, 0, 0);
-		RysujStatek(gracz);
-		RysujStatek(wrog);
-		//RysujArmia(wrog);
-		RysujPocisk(zwykly, num_pociski);
-		RysujPociskUp(ulepszony, num_pociski);
-		RysujUpgrade(upgrade);
-		if (wybuch1.live){
-			al_draw_scaled_bitmap(BM_Exp[curFrame], 50, 50, 500, 500 , wybuch1.x, wybuch1.y, 200, 200 , 0);
-		}
-		al_flip_display();
-		al_clear_to_color(al_map_rgb(0, 0, 0));
-		al_start_timer(timer);
-		spowalniacz++;
-		spowalniacz = spowalniacz % 10000;
-		czas++;
-		czas = czas % 10000;
-		Ruch1(wrog);
-		ALLEGRO_EVENT ev;
-		al_wait_for_event(event_queue, &ev);
-
-		if (ev.type == ALLEGRO_EVENT_TIMER) {
-			redraw = true;
-		}
-		else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-			break;
-		}
-		if (redraw && al_is_event_queue_empty(event_queue)) {
-			redraw = false;
-			al_clear_to_color(al_map_rgb(0, 0, 0));
+		if (menu){
 			al_flip_display();
-		}
-		if (ev.type == ALLEGRO_EVENT_KEY_DOWN){
-			switch (ev.keyboard.keycode)
-			{
-
-			case ALLEGRO_KEY_RIGHT: moveright = true; break;
-
-			case ALLEGRO_KEY_LEFT: moveleft = true; break;
-
-			case ALLEGRO_KEY_UP:  moveup = true; break;
-
-			case ALLEGRO_KEY_DOWN: movedown = true; break;
-
-			case ALLEGRO_KEY_SPACE: space = true; break;
-
+			al_draw_bitmap(BM_Tlo, 0, 0, 0);
+			al_draw_textf(title, al_map_rgb(255, 255, 255), width / 2, 50, ALLEGRO_ALIGN_CENTRE, "The Adventures of PapJack");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "New game");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 500, ALLEGRO_ALIGN_CENTRE, "Exit game");
+			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2 + 110, menuy, 50, 60, 0);
+			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2 - 140, menuy, 50, 60, 0);
+			al_stop_timer(timer);
+			ALLEGRO_EVENT ev;
+			al_wait_for_event(event_queue, &ev);
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_DOWN){
+				if (menuy == 390){
+					menuy = 490;
+				}
+			}
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_UP){
+				if (menuy == 490){
+					menuy = 390;
+				}
+			}
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ENTER){
+				if (menuy == 390){
+					game = true;
+					menu = false;
+				}
+				if (menuy == 490){
+					done = true;
+				}
 			}
 		}
-		if (ev.type == ALLEGRO_EVENT_KEY_UP){
-			switch (ev.keyboard.keycode)
-			{
-
-			case ALLEGRO_KEY_RIGHT: moveright = false; break;
-
-			case ALLEGRO_KEY_LEFT: moveleft = false; break;
-
-			case ALLEGRO_KEY_UP:  moveup = false; break;
-
-			case ALLEGRO_KEY_DOWN: movedown = false; break;
-
-			case ALLEGRO_KEY_SPACE: space = false; break;
-
+		if (game){
+			al_draw_bitmap(BM_Tlo, 0, 0, 0);
+			RysujStatek(gracz);
+			RysujStatek(wrog);
+			//RysujArmia(wrog);
+			RysujPocisk(zwykly, num_pociski);
+			RysujPociskUp(ulepszony, num_pociski);
+			RysujUpgrade(upgrade);
+			if (wybuch1.live){
+				al_draw_scaled_bitmap(BM_Exp[curFrame], 50, 50, 500, 500, wybuch1.x, wybuch1.y, 200, 200, 0);
 			}
-		}
-		if (moveup == true && gracz.y>500){
-			gracz.y -= gracz.predkosc;
-		}
-		if (movedown == true && gracz.y<800){
-			gracz.y += gracz.predkosc;
-		}
-		if (moveright == true && gracz.x<570){
-			gracz.x += gracz.predkosc;
-		}
-		if (moveleft == true && gracz.x>30){
-			gracz.x -= gracz.predkosc;
-		}
-		if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
-			done = true;
-		}
-		if (space == true && spowalniacz%30==1){
-			if (gracz.upgradetype == 1){
-				StrzelajPocisk(ulepszony, num_pociski, gracz);
+			al_draw_textf(font, al_map_rgb(255, 255, 255), 5, 0, 0, "Punkty: %i", gracz.punkty);
+			al_flip_display();
+			//al_clear_to_color(al_map_rgb(0, 0, 0));
+			al_start_timer(timer);
+			ALLEGRO_EVENT ev;
+			al_wait_for_event(event_queue, &ev);
+			spowalniacz++;
+			spowalniacz = spowalniacz % 10000;
+			czas++;
+			czas = czas % 10000;
+			Ruch1(wrog);
+
+			if (ev.type == ALLEGRO_EVENT_TIMER) {
+				redraw = true;
+			}
+			else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+				break;
+			}
+			if (redraw && al_is_event_queue_empty(event_queue)) {
+				redraw = false;
+				//al_clear_to_color(al_map_rgb(0, 0, 0));
+				al_flip_display();
+			}
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN){
+				switch (ev.keyboard.keycode)
+				{
+
+				case ALLEGRO_KEY_RIGHT: moveright = true; break;
+
+				case ALLEGRO_KEY_LEFT: moveleft = true; break;
+
+				case ALLEGRO_KEY_UP:  moveup = true; break;
+
+				case ALLEGRO_KEY_DOWN: movedown = true; break;
+
+				case ALLEGRO_KEY_SPACE: space = true; break;
+
+				}
+			}
+			if (ev.type == ALLEGRO_EVENT_KEY_UP){
+				switch (ev.keyboard.keycode)
+				{
+
+				case ALLEGRO_KEY_RIGHT: moveright = false; break;
+
+				case ALLEGRO_KEY_LEFT: moveleft = false; break;
+
+				case ALLEGRO_KEY_UP:  moveup = false; break;
+
+				case ALLEGRO_KEY_DOWN: movedown = false; break;
+
+				case ALLEGRO_KEY_SPACE: space = false; break;
+
+				}
+			}
+			if (moveup == true && gracz.y>500){
+				gracz.y -= gracz.predkosc;
+			}
+			if (movedown == true && gracz.y<800){
+				gracz.y += gracz.predkosc;
+			}
+			if (moveright == true && gracz.x<570){
+				gracz.x += gracz.predkosc;
+			}
+			if (moveleft == true && gracz.x>30){
+				gracz.x -= gracz.predkosc;
+			}
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
+				menu2 = true;
+				game = false;
+			}
+			if (space == true && spowalniacz % 30 == 1){
+				if (gracz.upgradetype == 1){
+					StrzelajPocisk(ulepszony, num_pociski, gracz);
+				}
+				else{
+					StrzelajPocisk(zwykly, num_pociski, gracz);
+				}
+			}
+			if (gracz.upgradetype == 2){
+				gracz.predkosc = 30;
 			}
 			else{
-				StrzelajPocisk(zwykly, num_pociski, gracz);
+				gracz.predkosc = 5;
 			}
-		}
-		if (gracz.upgradetype == 2){
-			gracz.predkosc = 30;
-		}
-		else{
-			gracz.predkosc = 5;
-		}
-		if (gracz.upgradetype == 3){
-			gracz.hp = 5;
-			gracz.upgradetype = 0;
-		}
-		if (czas >= 1000){
-			gracz.upgradetype = 0;
+			if (gracz.upgradetype == 3){
+				gracz.hp = 5;
+				gracz.upgradetype = 0;
+			}
+			if (czas >= 1000){
+				gracz.upgradetype = 0;
 
-		}
-		if (++frameCount >= frameDelay){
-			if (++curFrame >= maxFrame){
-				curFrame = 0;
 			}
-			frameCount = 0;
-			if (curFrame == 4){
-				wybuch1.live = false;
+			if (++frameCount >= frameDelay){
+				if (++curFrame >= maxFrame){
+					curFrame = 0;
+				}
+				frameCount = 0;
+				if (curFrame == 4){
+					wybuch1.live = false;
+				}
+			}
+			Zbieranie(gracz, upgrade, czas);
+			RuszajPocisk(zwykly, num_pociski);
+			Trafienie(zwykly, num_pociski, wrog, upgrade, czas, wybuch1, gracz);
+			RuszajPocisk(ulepszony, num_pociski);
+			Trafienie(ulepszony, num_pociski, wrog, upgrade, czas, wybuch1, gracz);
+			RuszajUpgrade(upgrade, height);
+		}
+		if (menu2){
+			al_stop_timer(timer);
+			al_flip_display();
+			al_draw_bitmap(BM_Tlo, 0, 0, 0);
+			al_draw_textf(title, al_map_rgb(255, 255, 255), width/2, 50, ALLEGRO_ALIGN_CENTRE, "The Adventures of PapJack");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Resume game");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 500, ALLEGRO_ALIGN_CENTRE, "Exit game");
+			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width/2+110, menuy, 50, 60, 0);
+			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2-140, menuy, 50, 60, 0);
+			ALLEGRO_EVENT ev;
+			al_wait_for_event(event_queue, &ev);
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_DOWN){
+				if (menuy == 390){
+					menuy = 490;
+				}
+			}
+			if(ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_UP){
+				if (menuy == 490){
+					menuy = 390;
+				}
+			}
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ENTER){
+				if (menuy == 390){
+					game = true;
+					menu2 = false;
+				}
+				if (menuy == 490){
+					done = true;
+				}
 			}
 		}
-		Zbieranie(gracz, upgrade, czas);
-		RuszajPocisk(zwykly, num_pociski);
-		Trafienie(zwykly, num_pociski, wrog, upgrade, czas, wybuch1);
-		RuszajPocisk(ulepszony, num_pociski);
-		Trafienie(ulepszony, num_pociski, wrog, upgrade, czas, wybuch1);
-		RuszajUpgrade(upgrade, height);
 	}
 	
 	al_destroy_timer(timer);
@@ -389,5 +472,7 @@ int main(void)
 	for (int i = 0; i < maxFrame; i++){
 		al_destroy_bitmap(BM_Exp[i]);
 	}
+	al_destroy_font(font);
+	al_destroy_font(title);
 	return 0;
 }

@@ -9,6 +9,7 @@ struct Statek{
 	int hx;
 	int hy;
 	int upgradetype;
+	int punkty;
 };
 struct Pocisk{
 	int x;

@@ -8,6 +8,8 @@
 #include<allegro5\allegro_ttf.h>
 #include<allegro5\allegro_font.h>
 #include<stdio.h>
+//#include<allegro5\allegro_audio.h>
+//#include<allegro5\allegro_acodec.h>
 
 void DefiniujStatek(Statek &gracz, ALLEGRO_BITMAP *mapa){
 	gracz.x = 300;
@@ -337,7 +339,7 @@ void RuszajUpgrade(Upgrade &up, int height){
 			}
 	}
 }
-void Zbieranie(Statek &gracz, Upgrade &up, int czas){
+void Zbieranie(Statek &gracz, Upgrade &up, int &czas){
 	if (gracz.live && up.live){
 		if (
 			up.x >(gracz.x + 22 - gracz.hx) &&
@@ -401,6 +403,10 @@ int main(void)
 	Boss boss;
 	wybuch1.live = false;
 
+	
+	//al_install_audio();
+	//al_init_acodec_addon();
+	//al_reserve_samples(1);
 	al_init_image_addon();
 	al_init_font_addon();
 	al_init_ttf_addon();
@@ -415,8 +421,10 @@ int main(void)
 	ALLEGRO_BITMAP *BM_Boss = NULL;
 	ALLEGRO_BITMAP *BM_Dzialo1 = NULL;
 	ALLEGRO_BITMAP *BM_Dzialo2 = NULL;
+	ALLEGRO_BITMAP *BM_Dopalacz = NULL;
 	ALLEGRO_FONT *font = NULL;
 	ALLEGRO_FONT *title = NULL;
+	//ALLEGRO_SAMPLE *Shoot = NULL;
 
 	if (!al_init())
 	{
@@ -443,12 +451,13 @@ int main(void)
 	al_init_primitives_addon();
 	al_install_keyboard();
 
+
 	event_queue = al_create_event_queue();
 	al_register_event_source(event_queue, al_get_keyboard_event_source());
 	al_register_event_source(event_queue, al_get_display_event_source(display));
 	al_register_event_source(event_queue, al_get_timer_event_source(timer));
-	al_clear_to_color(al_map_rgb(0, 0, 0));
-	al_flip_display();
+	//al_clear_to_color(al_map_rgb(0, 0, 0));
+	//al_flip_display();
 	BM_Statek = al_load_bitmap("statek.png");
 	BM_Wrog = al_load_bitmap("statek2.png");
 	BM_Exp[0] = al_load_bitmap("exp1.png");
@@ -460,6 +469,8 @@ int main(void)
 	BM_Boss = al_load_bitmap("gzibon.png");
 	BM_Dzialo1 = al_load_bitmap("dzialo1.png");
 	BM_Dzialo2 = al_load_bitmap("dzialo2.png");
+	BM_Dopalacz = al_load_bitmap("dopalacz.png");
+	//Shoot = al_load_sample("shoot.wav");
 
 	for (int i = 0; i < maxFrame; i++){
 		al_convert_mask_to_alpha(BM_Exp[i], al_map_rgb(255, 255, 255));
@@ -469,6 +480,7 @@ int main(void)
 	al_convert_mask_to_alpha(BM_Boss, al_map_rgb(255, 255, 255));
 	al_convert_mask_to_alpha(BM_Dzialo1, al_map_rgb(255, 255, 255));
 	al_convert_mask_to_alpha(BM_Dzialo2, al_map_rgb(255, 255, 255));
+	al_convert_mask_to_alpha(BM_Dopalacz, al_map_rgb(255, 255, 255));
 	DefiniujStatek(gracz, BM_Statek);
 	DefiniujWrog(wrog, BM_Wrog);
 	DefiniujPocisk(zwykly, num_pociski);
@@ -517,9 +529,9 @@ int main(void)
 		}
 		if (gameover){
 			al_stop_timer(timer);
-			al_flip_display();
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(title, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Game Over");
+			al_flip_display();
 			ALLEGRO_EVENT ev;
 			al_wait_for_event(event_queue, &ev);
 			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
@@ -598,6 +610,7 @@ int main(void)
 			}
 			if (moveup == true && gracz.y>500){
 				gracz.y -= gracz.predkosc;
+				al_draw_bitmap(BM_Dopalacz, gracz.x+5, gracz.y+50, 0);
 			}
 			if (movedown == true && gracz.y<800){
 				gracz.y += gracz.predkosc;
@@ -675,20 +688,21 @@ int main(void)
 				boss.lewe.live = true;
 				boss.prawe.live = true;
 			}
-			if (gracz.punkty >= 10000 && !wybuch1.live){
+			if (gracz.punkty >= 10000 && !upgrade.live){
 				game = false;
 				endgame = true;
 			}
+			al_flip_display();
 		}
 		if (menu2){
 			al_stop_timer(timer);
-			al_flip_display();
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(title, al_map_rgb(255, 255, 255), width/2, 50, ALLEGRO_ALIGN_CENTRE, "The Adventures of PapJack");
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Resume game");
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 500, ALLEGRO_ALIGN_CENTRE, "Exit game");
 			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width/2+110, menuy, 50, 60, 0);
 			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2-140, menuy, 50, 60, 0);
+			al_flip_display();
 			ALLEGRO_EVENT ev;
 			al_wait_for_event(event_queue, &ev);
 			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_DOWN){
@@ -712,31 +726,31 @@ int main(void)
 			}
 		}
 		if (endgame){
-			al_flip_display();
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(title, al_map_rgb(255, 255, 255), width / 2, 100, ALLEGRO_ALIGN_CENTRE, "You have slain Mr Gzibon!!!");
+			al_flip_display();
 			ALLEGRO_EVENT ev;
 			al_wait_for_event(event_queue, &ev);
 			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
 				done = true;
 			}
-			al_rest(5);
-			al_flip_display();
+			al_rest(3);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Galactic is save now ;))");
-			al_rest(5);
 			al_flip_display();
+			al_rest(2);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Thanks for playing");
-			al_rest(5);
 			al_flip_display();
+			al_rest(2);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Please support");
-			al_rest(5);
 			al_flip_display();
+			al_rest(2);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Bye");
-			al_rest(5);
+			al_flip_display();
+			al_rest(2);
 			done = true;
 		}
 	}
@@ -748,6 +762,8 @@ int main(void)
 	al_destroy_bitmap(BM_Boss);
 	al_destroy_bitmap(BM_Dzialo1);
 	al_destroy_bitmap(BM_Dzialo2);
+	al_destroy_bitmap(BM_Dopalacz);
+	//al_destroy_sample(Shoot);
 	for (int i = 0; i < maxFrame; i++){
 		al_destroy_bitmap(BM_Exp[i]);
 	}

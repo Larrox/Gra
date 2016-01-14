@@ -8,8 +8,8 @@
 #include<allegro5\allegro_ttf.h>
 #include<allegro5\allegro_font.h>
 #include<stdio.h>
-//#include<allegro5\allegro_audio.h>
-//#include<allegro5\allegro_acodec.h>
+#include<allegro5\allegro_audio.h>
+#include<allegro5\allegro_acodec.h>
 
 void DefiniujStatek(Statek &gracz, ALLEGRO_BITMAP *mapa){
 	gracz.x = 300;
@@ -30,10 +30,10 @@ void RysujStatek(Statek &gracz){
 
 }
 void RysujArmia(Statek &gracz){
-	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x+100, gracz.y+80, 50, 60, 0);
-	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x+200, gracz.y, 50, 60, 0);
-	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x+70, gracz.y, 50, 60, 0);
-	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x+130, gracz.y, 50, 60, 0);
+	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x + 100, gracz.y + 80, 50, 60, 0);
+	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x + 200, gracz.y, 50, 60, 0);
+	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x + 70, gracz.y, 50, 60, 0);
+	al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, gracz.x + 130, gracz.y, 50, 60, 0);
 }
 void Ruch1(Statek &gracz){
 	if (gracz.x <= 400 && gracz.y == 0){
@@ -206,35 +206,37 @@ void RuszajPociskWroga(Pocisk zwykly[], int ilosc, int height){
 		}
 	}
 }
-void Trafienie(Pocisk zwykly[], int ilosc, Statek &wrog, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz){
+void Trafienie(Pocisk zwykly[], int ilosc, Statek &wrog, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz, ALLEGRO_SAMPLE *boom, ALLEGRO_SAMPLE *collision){
 	for (int i = 0; i < ilosc; i++){
 		if (zwykly[i].live && wrog.live){
 			if (
 				zwykly[i].dobry == true &&
-				zwykly[i].x >(wrog.x +22 - wrog.hx) &&
-				zwykly[i].x <(wrog.x +22 + wrog.hx) &&
-				zwykly[i].y >(wrog.y +20 - wrog.hy) &&
-				zwykly[i].y <(wrog.y +20 + wrog.hy)){
-					wrog.hp -= zwykly[i].dmg;
-					zwykly[i].live = false;
-					gracz.punkty += 10;
-					if (wrog.hp <= 0){
-						wrog.live = false;
-						up.live = true;
-						up.x = wrog.x + 10;
-						up.y = wrog.y + 10;
-						up.type = (czas % 3) + 1;
-						wybuch.live = true;
-						wybuch.x = wrog.x + 10;
-						wybuch.y = wrog.y + 10;
-						gracz.punkty += 100;
-						}
+				zwykly[i].x >(wrog.x + 22 - wrog.hx) &&
+				zwykly[i].x <(wrog.x + 22 + wrog.hx) &&
+				zwykly[i].y >(wrog.y + 20 - wrog.hy) &&
+				zwykly[i].y <(wrog.y + 20 + wrog.hy)){
+				al_play_sample(collision, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+				wrog.hp -= zwykly[i].dmg;
+				zwykly[i].live = false;
+				gracz.punkty += 10;
+				if (wrog.hp <= 0){
+					wrog.live = false;
+					up.live = true;
+					up.x = wrog.x + 10;
+					up.y = wrog.y + 10;
+					up.type = (czas % 3) + 1;
+					wybuch.live = true;
+					al_play_sample(boom, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+					wybuch.x = wrog.x + 10;
+					wybuch.y = wrog.y + 10;
+					gracz.punkty += 100;
+				}
 
 			}
 		}
 	}
 }
-void Trafieniegracza(Pocisk zwykly[], int ilosc, Statek &wrog, Wybuch &wybuch){
+void Trafieniegracza(Pocisk zwykly[], int ilosc, Statek &wrog, Wybuch &wybuch, ALLEGRO_SAMPLE *boom, ALLEGRO_SAMPLE *collision){
 	for (int i = 0; i < ilosc; i++){
 		if (zwykly[i].live && wrog.live){
 			if (
@@ -243,11 +245,13 @@ void Trafieniegracza(Pocisk zwykly[], int ilosc, Statek &wrog, Wybuch &wybuch){
 				zwykly[i].x <(wrog.x + 22 + wrog.hx) &&
 				zwykly[i].y >(wrog.y + 20 - wrog.hy) &&
 				zwykly[i].y <(wrog.y + 20 + wrog.hy)){
+				al_play_sample(collision, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 				wrog.hp -= zwykly[i].dmg;
 				zwykly[i].live = false;
 				if (wrog.hp <= 0){
 					wrog.live = false;
 					wybuch.live = true;
+					al_play_sample(boom, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 					wybuch.x = wrog.x + 10;
 					wybuch.y = wrog.y + 10;
 				}
@@ -256,7 +260,7 @@ void Trafieniegracza(Pocisk zwykly[], int ilosc, Statek &wrog, Wybuch &wybuch){
 		}
 	}
 }
-void TrafienieDziala(Pocisk zwykly[], int ilosc, Dzialo &lewe, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz){
+void TrafienieDziala(Pocisk zwykly[], int ilosc, Dzialo &lewe, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz, ALLEGRO_SAMPLE *boom, ALLEGRO_SAMPLE *collision){
 	for (int i = 0; i < ilosc; i++){
 		if (zwykly[i].live && lewe.live){
 			if (
@@ -265,6 +269,7 @@ void TrafienieDziala(Pocisk zwykly[], int ilosc, Dzialo &lewe, Upgrade &up, int 
 				zwykly[i].x <(lewe.x + 22 + lewe.hx) &&
 				zwykly[i].y >(lewe.y + 20 - lewe.hy) &&
 				zwykly[i].y <(lewe.y + 20 + lewe.hy)){
+				al_play_sample(collision, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 				lewe.hp -= zwykly[i].dmg;
 				zwykly[i].live = false;
 				gracz.punkty += 10;
@@ -275,6 +280,7 @@ void TrafienieDziala(Pocisk zwykly[], int ilosc, Dzialo &lewe, Upgrade &up, int 
 					up.y = lewe.y + 10;
 					up.type = (czas % 3) + 1;
 					wybuch.live = true;
+					al_play_sample(boom, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 					wybuch.x = lewe.x + 10;
 					wybuch.y = lewe.y + 10;
 					gracz.punkty += 100;
@@ -284,7 +290,7 @@ void TrafienieDziala(Pocisk zwykly[], int ilosc, Dzialo &lewe, Upgrade &up, int 
 		}
 	}
 }
-void TrafienieBossa(Pocisk zwykly[], int ilosc, Boss &boss, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz){
+void TrafienieBossa(Pocisk zwykly[], int ilosc, Boss &boss, Upgrade &up, int czas, Wybuch &wybuch, Statek &gracz, ALLEGRO_SAMPLE *boom, ALLEGRO_SAMPLE *collision){
 	for (int i = 0; i < ilosc; i++){
 		if (zwykly[i].live && boss.live && !boss.lewe.live && !boss.prawe.live && !boss.srodkowe.live){
 			if (
@@ -293,6 +299,7 @@ void TrafienieBossa(Pocisk zwykly[], int ilosc, Boss &boss, Upgrade &up, int cza
 				zwykly[i].x <(290 + boss.hx) &&
 				zwykly[i].y >(180 - boss.hy) &&
 				zwykly[i].y <(180 + boss.hy)){
+				al_play_sample(collision, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 				boss.hp -= zwykly[i].dmg;
 				zwykly[i].live = false;
 				gracz.punkty += 10;
@@ -303,6 +310,7 @@ void TrafienieBossa(Pocisk zwykly[], int ilosc, Boss &boss, Upgrade &up, int cza
 					up.y = 210;
 					up.type = (czas % 3) + 1;
 					wybuch.live = true;
+					al_play_sample(boom, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 					wybuch.x = 270;
 					wybuch.y = 210;
 					gracz.punkty += 100000;
@@ -317,41 +325,42 @@ void DefiniujUpgrade(Upgrade &up){
 	up.predkosc = 3;
 }
 void RysujUpgrade(Upgrade up){
-		if (up.live){
-			switch (up.type){
-			case 1:
-				al_draw_filled_ellipse(up.x, up.y, 20, 30, al_map_rgb(255, 255, 0));
-				break;
-			case 2:
-				al_draw_filled_ellipse(up.x, up.y, 20, 30, al_map_rgb(255, 0, 0));
-				break;
-			case 3:
-				al_draw_filled_ellipse(up.x, up.y, 20, 30, al_map_rgb(0, 255, 0));
-				break;
-			}
+	if (up.live){
+		switch (up.type){
+		case 1:
+			al_draw_filled_ellipse(up.x, up.y, 20, 30, al_map_rgb(255, 255, 0));
+			break;
+		case 2:
+			al_draw_filled_ellipse(up.x, up.y, 20, 30, al_map_rgb(255, 0, 0));
+			break;
+		case 3:
+			al_draw_filled_ellipse(up.x, up.y, 20, 30, al_map_rgb(0, 255, 0));
+			break;
 		}
-}
-void RuszajUpgrade(Upgrade &up, int height){
-		if (up.live){
-			up.y += up.predkosc;
-			if (up.y >= height){
-				up.live = false;
-			}
 	}
 }
-void Zbieranie(Statek &gracz, Upgrade &up, int &czas){
+void RuszajUpgrade(Upgrade &up, int height){
+	if (up.live){
+		up.y += up.predkosc;
+		if (up.y >= height){
+			up.live = false;
+		}
+	}
+}
+void Zbieranie(Statek &gracz, Upgrade &up, int &czas, ALLEGRO_SAMPLE *take){
 	if (gracz.live && up.live){
 		if (
 			up.x >(gracz.x + 22 - gracz.hx) &&
 			up.x <(gracz.x + 22 + gracz.hx) &&
 			up.y >(gracz.y + 20 - gracz.hy) &&
 			up.y <(gracz.y + 20 + gracz.hy)){
-				gracz.upgradetype = up.type;
-				up.live = false;
-				gracz.punkty += 100;
-				czas = 0;
-			}
+			gracz.upgradetype = up.type;
+			up.live = false;
+			al_play_sample(take, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+			gracz.punkty += 100;
+			czas = 0;
 		}
+	}
 }
 void Pojawienie(Statek &wrog, int y){
 	if (wrog.pojawienie){
@@ -359,10 +368,10 @@ void Pojawienie(Statek &wrog, int y){
 		if (y < wrog.y){
 			y += wrog.predkosc;
 		}
-			if (y >= wrog.y){
-				wrog.pojawienie = false;
-				wrog.live = true;
-				al_draw_filled_ellipse(300, 400, 20, 30, al_map_rgb(0, 255, 0));
+		if (y >= wrog.y){
+			wrog.pojawienie = false;
+			wrog.live = true;
+			al_draw_filled_ellipse(300, 400, 20, 30, al_map_rgb(0, 255, 0));
 		}
 	}
 }
@@ -389,10 +398,10 @@ int main(void)
 	int frameDelay = 20;
 	bool menu = true, game = false, menu2 = false, gameover = false, endgame = false;
 	int menuy = 390;
-	int y=0;
+	int y = 0;
 	int strzelanie = 0;
 
-	
+
 	Statek gracz;
 	Statek wrog;
 	Pocisk zwykly[20];
@@ -403,10 +412,9 @@ int main(void)
 	Boss boss;
 	wybuch1.live = false;
 
-	
-	//al_install_audio();
-	//al_init_acodec_addon();
-	//al_reserve_samples(1);
+	al_init();
+	al_install_audio();
+	al_init_acodec_addon();
 	al_init_image_addon();
 	al_init_font_addon();
 	al_init_ttf_addon();
@@ -424,7 +432,16 @@ int main(void)
 	ALLEGRO_BITMAP *BM_Dopalacz = NULL;
 	ALLEGRO_FONT *font = NULL;
 	ALLEGRO_FONT *title = NULL;
-	//ALLEGRO_SAMPLE *Shoot = NULL;
+	ALLEGRO_SAMPLE *Shoot = NULL;
+	ALLEGRO_SAMPLE *Explode = NULL;
+	ALLEGRO_SAMPLE *Final = NULL;
+	ALLEGRO_SAMPLE *Take = NULL;
+	ALLEGRO_SAMPLE *Accept = NULL;
+	ALLEGRO_SAMPLE *Over = NULL;
+	ALLEGRO_SAMPLE *Bye = NULL;
+	ALLEGRO_SAMPLE *Esc = NULL;
+	ALLEGRO_SAMPLE *Collision = NULL;
+	al_reserve_samples(3);
 
 	if (!al_init())
 	{
@@ -470,7 +487,15 @@ int main(void)
 	BM_Dzialo1 = al_load_bitmap("dzialo1.png");
 	BM_Dzialo2 = al_load_bitmap("dzialo2.png");
 	BM_Dopalacz = al_load_bitmap("dopalacz.png");
-	//Shoot = al_load_sample("shoot.wav");
+	Shoot = al_load_sample("shoot.wav");
+	Explode = al_load_sample("wybuch.wav");
+	Final = al_load_sample("final.wav");
+	Take = al_load_sample("upgrade.wav");
+	Accept = al_load_sample("accept.wav");
+	Over = al_load_sample("gameover.wav");
+	Bye = al_load_sample("bye.wav");
+	Esc = al_load_sample("esc.wav");
+	Collision = al_load_sample("collision.wav");
 
 	for (int i = 0; i < maxFrame; i++){
 		al_convert_mask_to_alpha(BM_Exp[i], al_map_rgb(255, 255, 255));
@@ -487,7 +512,7 @@ int main(void)
 	DefiniujPociskUp(ulepszony, num_pociski);
 	DefiniujPociskWroga(wrogi, num_pociski2);
 	DefiniujUpgrade(upgrade);
-	DefiniujBoss(boss,BM_Boss, BM_Dzialo1, BM_Dzialo2);
+	DefiniujBoss(boss, BM_Boss, BM_Dzialo1, BM_Dzialo2);
 	printf("Lewe:%i\t%i\n", boss.lewe.x, boss.lewe.y);
 	font = al_load_font("ALGER.ttf", 36, NULL);
 	title = al_load_font("ALGER.ttf", 56, NULL);
@@ -519,24 +544,25 @@ int main(void)
 			}
 			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ENTER){
 				if (menuy == 390){
+					al_play_sample(Accept, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 					game = true;
 					menu = false;
 				}
 				if (menuy == 490){
+					al_play_sample(Bye, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+					al_rest(1);
 					done = true;
 				}
 			}
 		}
 		if (gameover){
 			al_stop_timer(timer);
+			al_play_sample(Over, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(title, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Game Over");
 			al_flip_display();
-			ALLEGRO_EVENT ev;
-			al_wait_for_event(event_queue, &ev);
-			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
-				done = true;
-			}
+			al_rest(4);
+			done = true;
 		}
 		if (game){
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
@@ -563,6 +589,8 @@ int main(void)
 			czas = czas % 10000;
 			strzelanie++;
 			strzelanie = strzelanie % 10000;
+			frameCount++;
+			frameCount = frameCount % 10000;
 			//Pojawienie(wrog, y);
 			Ruch1(wrog);
 			if (ev.type == ALLEGRO_EVENT_TIMER) {
@@ -610,7 +638,7 @@ int main(void)
 			}
 			if (moveup == true && gracz.y>500){
 				gracz.y -= gracz.predkosc;
-				al_draw_bitmap(BM_Dopalacz, gracz.x+5, gracz.y+50, 0);
+				al_draw_bitmap(BM_Dopalacz, gracz.x + 5, gracz.y + 50, 0);
 			}
 			if (movedown == true && gracz.y<800){
 				gracz.y += gracz.predkosc;
@@ -622,15 +650,18 @@ int main(void)
 				gracz.x -= gracz.predkosc;
 			}
 			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
+				al_play_sample(Esc, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 				menu2 = true;
 				game = false;
 			}
 			if (space == true && spowalniacz % 30 == 1){
 				if (gracz.upgradetype == 1){
 					StrzelajPocisk(ulepszony, num_pociski, gracz);
+					al_play_sample(Shoot, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 				}
 				else{
 					StrzelajPocisk(zwykly, num_pociski, gracz);
+					al_play_sample(Shoot, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 				}
 			}
 			if (gracz.upgradetype == 2){
@@ -647,7 +678,7 @@ int main(void)
 				gracz.upgradetype = 0;
 
 			}
-			if (++frameCount >= frameDelay){
+			if (frameCount >= frameDelay){
 				if (++curFrame >= maxFrame){
 					curFrame = 0;
 				}
@@ -656,20 +687,20 @@ int main(void)
 					wybuch1.live = false;
 				}
 			}
-			Zbieranie(gracz, upgrade, czas);
+			Zbieranie(gracz, upgrade, czas, Take);
 			RuszajPocisk(zwykly, num_pociski);
-			Trafienie(zwykly, num_pociski, wrog, upgrade, czas, wybuch1, gracz);
+			Trafienie(zwykly, num_pociski, wrog, upgrade, czas, wybuch1, gracz, Explode, Collision);
 			RuszajPocisk(ulepszony, num_pociski);
-			Trafienie(ulepszony, num_pociski, wrog, upgrade, czas, wybuch1, gracz);
+			Trafienie(ulepszony, num_pociski, wrog, upgrade, czas, wybuch1, gracz, Explode, Collision);
 			RuszajUpgrade(upgrade, height);
-			TrafienieDziala(zwykly, num_pociski, boss.lewe, upgrade, czas, wybuch1, gracz);
-			TrafienieDziala(ulepszony, num_pociski, boss.lewe, upgrade, czas, wybuch1, gracz);
-			TrafienieDziala(zwykly, num_pociski, boss.prawe, upgrade, czas, wybuch1, gracz);
-			TrafienieDziala(ulepszony, num_pociski, boss.prawe, upgrade, czas, wybuch1, gracz);
-			TrafienieDziala(zwykly, num_pociski, boss.srodkowe, upgrade, czas, wybuch1, gracz);
-			TrafienieDziala(ulepszony, num_pociski, boss.srodkowe, upgrade, czas, wybuch1, gracz);
-			TrafienieBossa(zwykly, num_pociski, boss, upgrade, czas, wybuch1, gracz);
-			TrafienieBossa(ulepszony, num_pociski, boss, upgrade, czas, wybuch1, gracz);
+			TrafienieDziala(zwykly, num_pociski, boss.lewe, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieDziala(ulepszony, num_pociski, boss.lewe, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieDziala(zwykly, num_pociski, boss.prawe, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieDziala(ulepszony, num_pociski, boss.prawe, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieDziala(zwykly, num_pociski, boss.srodkowe, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieDziala(ulepszony, num_pociski, boss.srodkowe, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieBossa(zwykly, num_pociski, boss, upgrade, czas, wybuch1, gracz, Explode, Collision);
+			TrafienieBossa(ulepszony, num_pociski, boss, upgrade, czas, wybuch1, gracz, Explode, Collision);
 			if (strzelanie % 80 == 1){
 				StrzelajPocisk(wrogi, num_pociski2, wrog);
 				StrzelajPociskBossa(wrogi, num_pociski2, boss.lewe);
@@ -677,12 +708,12 @@ int main(void)
 				StrzelajPociskBossa(wrogi, num_pociski2, boss.srodkowe);
 			}
 			RuszajPociskWroga(wrogi, num_pociski2, height);
-			Trafieniegracza(wrogi, num_pociski2, gracz, wybuch1);
+			Trafieniegracza(wrogi, num_pociski2, gracz, wybuch1, Explode, Collision);
 			if (gracz.hp <= 0 && !wybuch1.live){
 				game = false;
 				gameover = true;
 			}
-			if (gracz.punkty==220){
+			if (gracz.punkty == 220){
 				boss.live = true;
 				boss.srodkowe.live = true;
 				boss.lewe.live = true;
@@ -697,11 +728,11 @@ int main(void)
 		if (menu2){
 			al_stop_timer(timer);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
-			al_draw_textf(title, al_map_rgb(255, 255, 255), width/2, 50, ALLEGRO_ALIGN_CENTRE, "The Adventures of PapJack");
+			al_draw_textf(title, al_map_rgb(255, 255, 255), width / 2, 50, ALLEGRO_ALIGN_CENTRE, "The Adventures of PapJack");
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Resume game");
 			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 500, ALLEGRO_ALIGN_CENTRE, "Exit game");
-			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width/2+110, menuy, 50, 60, 0);
-			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2-140, menuy, 50, 60, 0);
+			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2 + 110, menuy, 50, 60, 0);
+			al_draw_scaled_bitmap(gracz.bitmap, 1, 1, 174, 178, width / 2 - 140, menuy, 50, 60, 0);
 			al_flip_display();
 			ALLEGRO_EVENT ev;
 			al_wait_for_event(event_queue, &ev);
@@ -710,60 +741,64 @@ int main(void)
 					menuy = 490;
 				}
 			}
-			if(ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_UP){
+			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_UP){
 				if (menuy == 490){
 					menuy = 390;
 				}
 			}
 			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ENTER){
 				if (menuy == 390){
+					al_play_sample(Accept, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 					game = true;
 					menu2 = false;
 				}
 				if (menuy == 490){
+					al_play_sample(Bye, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+					al_rest(1);
 					done = true;
 				}
 			}
 		}
 		if (endgame){
+			al_play_sample(Final, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
 			al_draw_bitmap(BM_Tlo, 0, 0, 0);
 			al_draw_textf(title, al_map_rgb(255, 255, 255), width / 2, 100, ALLEGRO_ALIGN_CENTRE, "You have slain Mr Gzibon!!!");
 			al_flip_display();
-			ALLEGRO_EVENT ev;
-			al_wait_for_event(event_queue, &ev);
-			if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
-				done = true;
-			}
 			al_rest(3);
-			al_draw_bitmap(BM_Tlo, 0, 0, 0);
-			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Galactic is save now ;))");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 250, ALLEGRO_ALIGN_CENTRE, "Galactic is save now ;))");
 			al_flip_display();
 			al_rest(2);
-			al_draw_bitmap(BM_Tlo, 0, 0, 0);
-			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Thanks for playing");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 350, ALLEGRO_ALIGN_CENTRE, "Thanks for playing");
 			al_flip_display();
 			al_rest(2);
-			al_draw_bitmap(BM_Tlo, 0, 0, 0);
-			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Please support");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 450, ALLEGRO_ALIGN_CENTRE, "Please support");
 			al_flip_display();
 			al_rest(2);
-			al_draw_bitmap(BM_Tlo, 0, 0, 0);
-			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 400, ALLEGRO_ALIGN_CENTRE, "Bye");
+			al_draw_textf(font, al_map_rgb(255, 255, 255), width / 2, 550, ALLEGRO_ALIGN_CENTRE, "Bye");
 			al_flip_display();
-			al_rest(2);
+			al_play_sample(Bye, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, NULL);
+			al_rest(1);
 			done = true;
 		}
 	}
 	al_destroy_timer(timer);
 	al_destroy_event_queue(event_queue);
 	al_destroy_display(display);
-	al_destroy_bitmap(BM_Statek);	
+	al_destroy_bitmap(BM_Statek);
 	al_destroy_bitmap(BM_Wrog);
 	al_destroy_bitmap(BM_Boss);
 	al_destroy_bitmap(BM_Dzialo1);
 	al_destroy_bitmap(BM_Dzialo2);
 	al_destroy_bitmap(BM_Dopalacz);
-	//al_destroy_sample(Shoot);
+	al_destroy_sample(Shoot);
+	al_destroy_sample(Explode);
+	al_destroy_sample(Final);
+	al_destroy_sample(Take);
+	al_destroy_sample(Accept);
+	al_destroy_sample(Over);
+	al_destroy_sample(Bye);
+	al_destroy_sample(Esc);
+	al_destroy_sample(Collision);
 	for (int i = 0; i < maxFrame; i++){
 		al_destroy_bitmap(BM_Exp[i]);
 	}

@@ -11,6 +11,7 @@ struct Statek{
 	int upgradetype;
 	int punkty;
 	bool pojawienie;
+	int poczatkowey;
 };
 struct Pocisk{
 	int x;
@@ -53,4 +54,7 @@ struct Boss{
 	ALLEGRO_BITMAP *bitmap;
 	int hx;
 	int hy;
+	int poczatkowey;
+	bool pojawienie;
+	int predkosc;
 };
